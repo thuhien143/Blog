@@ -5,53 +5,59 @@ const bcrypt = require('bcrypt');
 
 // UPDATE
 router.put("/:id", async (req, res) => {
-    if(req.body.userId === req.params.id){
-        if(req.body.password){
+    if (req.body.userId === req.params.id) {
+        if (req.body.password) {
             const salt = await bcrypt.genSalt(10);
-            req.body.params = await bcrypt.hash(req.body.password, salt);
+            req.body.password = await bcrypt.hash(req.body.password, salt); 
         }
         try {
             const updatedUser = await User.findByIdAndUpdate(req.params.id, {
                 $set: req.body,
-            }, {new: true})
+            }, { new: true });
             res.status(200).json(updatedUser);
         } catch (err) {
-          res.status(500).json(err);
+            res.status(500).json({ message: "Error updating user", error: err });
         }
-    }else {
-        res.status(401).json("You can update only your account!")
+    } else {
+        res.status(401).json("You can update only your account!");
     }
 });
 
-//DELETE
+// DELETE
 router.delete("/:id", async (req, res) => {
-    if(req.body.userId === req.params.id){
-        try{
+    if (req.body.userId === req.params.id) {
+        try {
             const user = await User.findById(req.params.id);
-            try {
-                await Post.deleteMany({username: user.username})
-                await User.findByIdAndDelete(req.params.id)
-                res.status(200).json("USer has been deleted...");
-            } catch (err) {
-              res.status(500).json(err);
+            if (!user) {
+                return res.status(404).json("User not found!");
             }
-        }catch(err){
-            res.status(404).json("User not found!")
+            try {
+                await Post.deleteMany({ username: user.username });
+                await User.findByIdAndDelete(req.params.id);
+                res.status(200).json("User has been deleted...");
+            } catch (err) {
+                res.status(500).json({ message: "Error deleting user", error: err });
+            }
+        } catch (err) {
+            res.status(500).json({ message: "Error finding user", error: err });
         }
-    }else {
-        res.status(401).json("You can delete only your account!")
+    } else {
+        res.status(401).json("You can delete only your account!");
     }
 });
 
-//GET USER
+// GET USER
 router.get("/:id", async (req, res) => {
-    try{
+    try {
         const user = await User.findById(req.params.id);
-        const {password, ...others} = user._doc;
+        if (!user) {
+            return res.status(404).json("User not found!");
+        }
+        const { password, ...others } = user._doc;
         res.status(200).json(others);
-    }catch(err){
-        res.status(500).json(err)
+    } catch (err) {
+        res.status(500).json({ message: "Error fetching user", error: err });
     }
-})
+});
 
 module.exports = router;

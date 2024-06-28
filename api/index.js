@@ -6,6 +6,8 @@ const authRoute = require("./routes/auth");
 const userRoute = require("./routes/users");
 const postRoute = require("./routes/posts");
 const categoryRoute = require("./routes/categories");
+const likeRoute = require("./routes/likes");
+const commentRoute = require("./routes/comments");
 const multer = require("multer");
 const path = require("path");
 
@@ -40,6 +42,8 @@ app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/posts", postRoute);
 app.use("/api/categories", categoryRoute);
+app.use("/api/likes", likeRoute);
+app.use("/api/comments", commentRoute);
 
 app.listen("5000", () => {
   console.log("Backend is running.");

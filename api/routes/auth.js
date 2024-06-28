@@ -5,7 +5,6 @@ const bcrypt = require('bcrypt');
 // REGISTER
 router.post("/register", async (req, res) => {
   try {
-
     const salt = await bcrypt.genSalt(10);
     const hashedPass = await bcrypt.hash(req.body.password, salt);
     const newUser = new User({
@@ -24,18 +23,24 @@ router.post("/register", async (req, res) => {
 
 // LOGIN
 router.post("/login", async (req, res) => {
-    try {
-      const user = await User.findOne({ username: req.body.username });
-      !user && res.status(400).json("Wrong credentials!");
-  
-      const validated = await bcrypt.compare(req.body.password, user.password);
-      !validated && res.status(400).json("Wrong credentials!");
-  
-      const { password, ...others } = user._doc;
-      res.status(200).json(others);
-    } catch (err) {
-      res.status(500).json(err);
+  try {
+    const user = await User.findOne({ username: req.body.username });
+
+    if (!user) {
+      return res.status(400).json("Wrong credentials!"); // Return to prevent further execution
     }
+
+    const validated = await bcrypt.compare(req.body.password, user.password);
+
+    if (!validated) {
+      return res.status(400).json("Wrong credentials!"); // Return to prevent further execution
+    }
+
+    const { password, ...others } = user._doc;
+    return res.status(200).json(others); // Explicit return, though not strictly necessary here
+  } catch (err) {
+    return res.status(500).json(err); // Explicit return for consistency
+  }
 });
 
 module.exports = router;
