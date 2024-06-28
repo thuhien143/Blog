@@ -9,7 +9,6 @@ import axios from "axios";
 import { Context } from "../../context/Context";
 import Comments from "../comments/Comments";
 
-
 export default function Post({ post }) {
   const { user } = useContext(Context);
   const [commentOpen, setCommentOpen] = useState(false);
@@ -18,39 +17,47 @@ export default function Post({ post }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchLikes = async () => {
-      try {
-        const response = await axios.get(`/api/likes?postId=${post._id}`);
-        setLikes(response.data);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error fetching likes:", error);
-        setError(error);
-        setIsLoading(false);
-      }
-    };
+    if (post && post._id) {
+      const fetchLikes = async () => {
+        try {
+          const response = await axios.get(`/api/likes?postId=${post._id}`);
+          setLikes(response.data);
+        } catch (error) {
+          console.error("Error fetching likes:", error);
+          setError(error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
-    fetchLikes();
-  }, [post._id]);
+      fetchLikes();
+    } else {
+      setIsLoading(false);
+    }
+  }, [post]);
 
   const handleLike = async () => {
-    try {
-      if (likes.includes(user._id)) {
-        await axios.delete(`/api/likes?postId=${post._id}`);
-      } else {
-        await axios.post("/api/likes", { postId: post._id });
+    if (user && user._id && post && post._id) {
+      try {
+        if (likes.includes(user._id)) {
+          await axios.delete(`/api/likes`, { data: { userId: user._id, postId: post._id } });
+          setLikes((prevLikes) => prevLikes.filter((userId) => userId !== user._id));
+        } else {
+          await axios.post("/api/likes", { userId: user._id, postId: post._id });
+          setLikes((prevLikes) => [...prevLikes, user._id]);
+        }
+      } catch (error) {
+        console.error("Error toggling like:", error);
+        setError(error);
       }
-      setLikes((prevLikes) =>
-        prevLikes.includes(user._id)
-          ? prevLikes.filter((userId) => userId !== user._id)
-          : [...prevLikes, user._id]
-      );
-    } catch (error) {
-      console.error("Error toggling like:", error);
     }
   };
 
   const PF = "http://localhost:5000/images/";
+
+  if (!post) {
+    return null; 
+  }
 
   return (
     <div className="post">
@@ -74,7 +81,7 @@ export default function Post({ post }) {
         <div className="item">
           {isLoading ? (
             "Loading..."
-          ) : likes.includes(user._id) ? (
+          ) : user && likes.includes(user._id) ? (
             <FavoriteOutlinedIcon style={{ color: "red" }} onClick={handleLike} />
           ) : (
             <FavoriteBorderOutlinedIcon onClick={handleLike} />
@@ -91,6 +98,7 @@ export default function Post({ post }) {
         </div>
         {commentOpen && <Comments postId={post._id} />}
       </div>
+      {error && <div className="error">Error: {error.message}</div>}
     </div>
   );
 }
